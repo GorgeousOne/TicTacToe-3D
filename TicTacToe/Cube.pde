@@ -17,7 +17,7 @@ public enum Team {
   }
 }
 
-public class Cube implements Displayable, Transformable {
+public class Cube implements Displayable {
   
   private PVector pos;
   private float pitch, yaw;
@@ -28,7 +28,6 @@ public class Cube implements Displayable, Transformable {
   private Color fill, stroke;
   
   private boolean isVisible;
-  private boolean needsUpdate;
   
   public Cube (float size) {
     this(size, size, size); 
@@ -57,7 +56,6 @@ public class Cube implements Displayable, Transformable {
     connections = new ArrayList<Connection>();
     
     isVisible = true;
-    needsUpdate = true;
   }
 
   //getter
@@ -93,16 +91,6 @@ public class Cube implements Displayable, Transformable {
     pos.set(point.x, point.y, point.z);
     for(Quad3d face : faces)
       face.setPos(point);
-  }
-  
-  public void setYaw(float angle) {
-    for(Quad3d face : faces)
-      face.setYaw(angle);
-  }
-  
-  public void setPitch(float angle) {
-    for(Quad3d face : faces)
-      face.setPitch(angle);
   }
   
   public void setTeam(Team t) {
@@ -150,8 +138,8 @@ public class Cube implements Displayable, Transformable {
   public void display() {
     if(!isVisible)
       return;
-    if(needsUpdate)
-      checkFaceVisiblity();
+
+    checkFaceVisiblity();
     
     for(Quad3d face : faces)
       face.display();

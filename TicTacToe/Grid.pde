@@ -95,15 +95,6 @@ public class Grid implements Displayable {
      return teamCubes;
   }
   
-  public void setRotation(float yaw, float pitch) {
-    for(int x = 0; x < size; x++)
-      for(int y = 0; y < size; y++)
-        for(int z = 0; z < size; z++) {
-          grid[x][y][z].setYaw(yaw);
-          grid[x][y][z].setPitch(pitch);;
-        }
-  }
-  
   public void reset() {    
     for(int x = 0; x < size; x++)
       for(int y = 0; y < size; y++)

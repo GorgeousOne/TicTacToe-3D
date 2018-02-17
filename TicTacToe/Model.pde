@@ -131,7 +131,7 @@ public class Model {
       menu.setText(winner == null ? "It's a Draw!" : winner + " won!");
       continueButton.setText(winner == null ? "Really?" : "But how?");
       turnDisplay.setText(winner == null ? "Yes, really." : "Like this:");
-      resetButton.setText("New Game");   
+      resetButton.setText("New Game");
 
     }else {
       menuBack.setTexture(get());
@@ -207,11 +207,6 @@ public class Model {
       selection = null;
       selectionPos = null;
     }
-  }
-  
-  //überträgt die Drehung des Controllers auf das Grid
-  public void setGridRotation(float yaw, float pitch) {
-    grid.setRotation(yaw, pitch);
   }
   
   //schließt die Auswahl eines Würfels für das jeweilig Team ab, es wird Ereiterungen von vorhandenen Verbindungen zwischen Würfeln gesucht

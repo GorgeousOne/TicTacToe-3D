@@ -1,16 +1,15 @@
 
-public class Quad3d extends Plane implements Displayable, Transformable, Textureable{
+public class Quad3d extends Plane implements Displayable{
   
+  private float pitch, yaw;
   private PVector pos;
-  private float yaw, pitch;
   
   private PVector[] vertices;
-  private PVector[] transVertices;
   
   private Color fill, stroke;
   private PImage texture;
   
-  private boolean isVisible, needsUpdate;
+  private boolean isVisible;
   
   public Quad3d(PVector origin, PVector edgeA, PVector edgeB) {
     super(origin, edgeA, edgeB);
@@ -23,10 +22,7 @@ public class Quad3d extends Plane implements Displayable, Transformable, Texture
                  getOrigin().add(edgeA).add(edgeB),
                  getOrigin().add(edgeB)};
 
-    transVertices = vertices.clone();
-    needsUpdate = false;
     isVisible = true;
-    
     fill = new Color(0);
     stroke = new Color(0);
   }
@@ -35,18 +31,16 @@ public class Quad3d extends Plane implements Displayable, Transformable, Texture
     return vertices.clone();
   }
  
-  public PVector[] getVertices() {
-    return transVertices.clone();
-  }
+  //public PVector[] getVertices() {
+  //  return transVertices.clone();
+  //}
   
   //getter
   public PVector getPos() {
     return pos.copy();
   }
   public PVector getMid() {
-    if(needsUpdate)
-      calcTransform();
-    return transVertices[0].copy().add(getEdgeA().mult(0.5)).add(getEdgeB().mult(0.5));
+    return vertices[0].copy().add(getEdgeA().mult(0.5)).add(getEdgeB().mult(0.5));
   }
  
   public float getYaw() {
@@ -58,15 +52,11 @@ public class Quad3d extends Plane implements Displayable, Transformable, Texture
   }
   
   public PVector getEdgeA() {
-    if(needsUpdate)
-      calcTransform();
-    return transVertices[1].copy().sub(transVertices[0]);
+    return vertices[1].copy().sub(vertices[0]);
   }
   
   public PVector getEdgeB() {
-    if(needsUpdate)
-      calcTransform();
-    return transVertices[3].copy().sub(transVertices[0]);
+    return vertices[3].copy().sub(vertices[0]);
   }
   
   public Color getFill() {
@@ -76,39 +66,19 @@ public class Quad3d extends Plane implements Displayable, Transformable, Texture
     return stroke;
   }
   
-  @Override
   public PImage getTexture() {
     return texture;
   }
-  
 
   //setter
-  public void setShape(PVector origin, PVector edgeA, PVector edgeB) {
-    vertices = new PVector[] {origin.copy(),
-                 origin.copy().add(edgeA),
-                 origin.copy().add(edgeA).add(edgeB),
-                 origin.copy().add(edgeB)};
-    needsUpdate = true;
-  }
-  
   public void setPos(PVector point) {
-    pos.set(point.x, point.y, point.z);
-    needsUpdate = true;
+    for(PVector vertex : vertices)
+      vertex.sub(pos).add(point);
+    pos = point.copy();
+    
+    setOrigin(vertices[0]);
+    setNormal(getEdgeA().cross(getEdgeB()));
   }  
-  
-  public void setYaw(float angle) {
-    if(Math.abs(angle) > Math.PI)
-      angle -= Math.signum(yaw) * 2*Math.PI;
-    yaw = angle;
-    needsUpdate = true;
-  }
-  
-  public void setPitch(float angle) {
-    if(Math.abs(angle) > Math.PI)
-      angle -= Math.signum(yaw) * 2*Math.PI;
-    pitch = angle;
-    needsUpdate = true;
-  }
  
   public void setFill(Color c) {
     fill = c;
@@ -117,7 +87,6 @@ public class Quad3d extends Plane implements Displayable, Transformable, Texture
     stroke = c;
   }
   
-  @Override
   public void setTexture(PImage img) {
     texture = img;
   }
@@ -127,18 +96,12 @@ public class Quad3d extends Plane implements Displayable, Transformable, Texture
     isVisible = state;
   }
   
-  public boolean needsUpdate() {
-    return needsUpdate;
-  }
-  
   public boolean contains(PVector p) {
-    if(needsUpdate)
-      calcTransform();
     if(!super.contains(p))
       return false;
     
     PVector edgeA = getEdgeA(), edgeB = getEdgeB();
-    PVector point = p.copy().sub(transVertices[0]);
+    PVector point = p.copy().sub(vertices[0]);
   
     float p1, p2, a1, a2, b1, b2;
     
@@ -150,7 +113,6 @@ public class Quad3d extends Plane implements Displayable, Transformable, Texture
         b2 = edgeB.y;
         p1 = point.x;
         p2 = point.y;
-        //println("x");
     }else if(edgeA.x != 0 && edgeB.z != 0 ||
              edgeA.z != 0 && edgeB.x != 0) {
         a1 = edgeA.x;
@@ -159,7 +121,6 @@ public class Quad3d extends Plane implements Displayable, Transformable, Texture
         b2 = edgeB.z;
         p1 = point.x;
         p2 = point.z;        
-        //println("y");       
     }else {
         a1 = edgeA.y;
         a2 = edgeA.z;
@@ -167,7 +128,6 @@ public class Quad3d extends Plane implements Displayable, Transformable, Texture
         b2 = edgeB.z;
         p1 = point.y;
         p2 = point.z;
-        //println("z");
     }
       
     float r, s;
@@ -178,8 +138,6 @@ public class Quad3d extends Plane implements Displayable, Transformable, Texture
   }
   
   public boolean intersects(Line l) {
-    if(needsUpdate)
-      calcTransform();
     if(!super.intersects(l))
       return false;
 
@@ -188,9 +146,6 @@ public class Quad3d extends Plane implements Displayable, Transformable, Texture
   }
   
   public PVector getIntersection(Line l) {
-    if(needsUpdate)
-      calcTransform();
-    
     //get the poit of intersection between the line and the plane
     float r = getOrigin().sub(l.getOrigin()).dot(getNormal()) / l.getDirection().dot(getNormal());
     PVector intersection = l.getPoint(r);
@@ -202,17 +157,14 @@ public class Quad3d extends Plane implements Displayable, Transformable, Texture
   public void display() {
     if(!isVisible)
       return;
-      
-    if(needsUpdate)
-      calcTransform();
     
     if(texture != null) {
       beginShape();
       texture(texture);
-      vertex(transVertices[0].x, transVertices[0].y, transVertices[0].z, 0, 0);
-      vertex(transVertices[1].x, transVertices[1].y, transVertices[1].z, texture.width, 0);
-      vertex(transVertices[2].x, transVertices[2].y, transVertices[2].z, texture.width, texture.height);
-      vertex(transVertices[3].x, transVertices[3].y, transVertices[3].z, 0, texture.height);
+      vertex(vertices[0].x, vertices[0].y, vertices[0].z, 0, 0);
+      vertex(vertices[1].x, vertices[1].y, vertices[1].z, texture.width, 0);
+      vertex(vertices[2].x, vertices[2].y, vertices[2].z, texture.width, texture.height);
+      vertex(vertices[3].x, vertices[3].y, vertices[3].z, 0, texture.height);
       endShape(PConstants.CLOSE);
     
     }else {
@@ -220,10 +172,10 @@ public class Quad3d extends Plane implements Displayable, Transformable, Texture
       stroke(stroke.integer());
       
       beginShape();
-      vertex(transVertices[0].x, transVertices[0].y, transVertices[0].z);
-      vertex(transVertices[1].x, transVertices[1].y, transVertices[1].z);
-      vertex(transVertices[2].x, transVertices[2].y, transVertices[2].z);
-      vertex(transVertices[3].x, transVertices[3].y, transVertices[3].z);
+      vertex(vertices[0].x, vertices[0].y, vertices[0].z);
+      vertex(vertices[1].x, vertices[1].y, vertices[1].z);
+      vertex(vertices[2].x, vertices[2].y, vertices[2].z);
+      vertex(vertices[3].x, vertices[3].y, vertices[3].z);
       endShape(PConstants.CLOSE);
     }
     
@@ -231,31 +183,5 @@ public class Quad3d extends Plane implements Displayable, Transformable, Texture
     //PVector end = mid.copy().add(getNormal().normalize().mult(50));
     //stroke(100, 255, 255);
     //line(mid.x, mid.y, mid.z, end.x, end.y, end.z);
-  }
-  
-  public void calcTransform() {
-    float x, y, z;
-    
-    //translate all points referring to their position
-    for(int i = 0; i < vertices.length; i++)
-      transVertices[i] = vertices[i].copy().add(pos);
-    
-    //yaw rotation
-    pushMatrix();
-    rotateX(pitch);
-    rotateY(yaw);
-
-    for(int i = 0; i < transVertices.length; i++) {
-      PVector vertex = transVertices[i];
-      x = modelX(vertex.x, vertex.y, vertex.z);
-      y = modelY(vertex.x, vertex.y, vertex.z);
-      z = modelZ(vertex.x, vertex.y, vertex.z);
-      vertex.set(x, y, z);
-    }
-    popMatrix();
-    
-    needsUpdate = false;
-    setOrigin(transVertices[0]);
-    setNormal(getEdgeA().cross(getEdgeB()));
   }
 }

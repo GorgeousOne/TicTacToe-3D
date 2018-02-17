@@ -3,7 +3,7 @@ public enum Alignment {
   LEFT, RIGHT, CENTER, TOP, BOTTOM;
 }
 
-public class Component2d implements Displayable, Textureable {
+public class Component2d implements Displayable {
   
   protected float x, y, w, h;
   protected Color foreground, background, border;
@@ -99,11 +99,9 @@ public class Component2d implements Displayable, Textureable {
            pY > y && pY < y+h;
   }
   
-  @Override
   public PImage getTexture() {
     return texture;
   }
-  @Override
   public void setTexture(PImage img) {
     this.texture = img;
   }
@@ -224,7 +222,7 @@ public class Component2d implements Displayable, Textureable {
       long fadeTimeLeft = (fadeStart+fadeDuration) - millis();      
       int alpha = 255 - (int) (255f / pow(fadeDuration, animationSpeed) * pow(fadeTimeLeft, animationSpeed));
 
-      translate(0, 0, sign(getCamPos().z));
+      translate(0, 0, 0.1);
       tint(255, alpha);
 
       beginShape();
@@ -242,7 +240,7 @@ public class Component2d implements Displayable, Textureable {
     }
     
     if(text != null && !text.equals("")) {
-      translate(0, 0, sign(getCamPos().z));
+      translate(0, 0, 0.1);
       paintText();
     }
     

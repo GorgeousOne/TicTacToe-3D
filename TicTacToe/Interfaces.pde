@@ -14,9 +14,3 @@ public interface Transformable {
   void setYaw(float angle);
   void setPitch(float angle);
 }
- 
-//Interface für alle Objekte, die eine Textur haben sollen
-public interface Textureable {
-  void setTexture(PImage img);
-  PImage getTexture();
-}
