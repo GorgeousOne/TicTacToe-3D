@@ -3,8 +3,8 @@ import java.awt.event.ActionListener;
 public class Button2d extends Component2d {
   
   private boolean isEnabled;
-  private ActionListener action;
   private boolean isKeyPressed;
+  private ActionListener action;
   private char shortCut;
   
   public Button2d(float x, float y, float w, float h) {
@@ -27,6 +27,7 @@ public class Button2d extends Component2d {
     shortCut = 0;
   }
   
+  //lege fest, ob der Knopf pressbar ist
   public void setEnabled(boolean flag) {
     if(!flag) {
       if(isMouseHovered)
@@ -37,10 +38,12 @@ public class Button2d extends Component2d {
     isEnabled = flag;
   }
   
+  //setzt die auszuführende Aktion, wenn der Knopf als bestätigt gezählt wird
   public void setAction(ActionListener a) {
     action = a;
   }
   
+  //legt eine Taste fest, mit der man den Knopf pressen kann
   public void setShortCut(char key) {
     this.shortCut = key;
   }
@@ -122,7 +125,7 @@ public class Button2d extends Component2d {
   }
   
   @Override
-  public void setVisible(boolean flag) {
+  public void setVisible(boolean state) {
     
     if(isMouseHovered)
       mouseExit();
@@ -131,9 +134,10 @@ public class Button2d extends Component2d {
     if(isKeyPressed)
       isKeyPressed = false;
 
-    super.setVisible(flag);
+    super.setVisible(state);
   }
   
+  //wechselt die Farben von Schrift und Hintergrund
   private void switchColors() {
     Color holder = foreground;
     foreground = background;
@@ -144,7 +148,7 @@ public class Button2d extends Component2d {
   public void display() {
     float slideTimeLeft = (slideStart+slideDuration) - millis();
       
-    if(isSliding && slideTimeLeft <= 0)
+    if(isSlidingIn && slideTimeLeft <= 0)
       setEnabled(true);
       
     super.display();

@@ -1,4 +1,5 @@
 
+//erstellt ein 3D-Array mit Würfeln, die das TicTacToe Gitter darstellen
 public class Grid implements Displayable {
   
   private Cube[][][] grid;
@@ -6,6 +7,10 @@ public class Grid implements Displayable {
  
   private boolean isVisible;
  
+  /*Konstruktor
+    @param Anzahl der Würfel auf einer Kante
+    @param Länge der Diagonalen des gesamten Gitterkonstrukts auf xz-Ebene
+  */
   public Grid(int size, float diagonalSize) {
     this.size = size;
     grid = new Cube[size][size][size];
@@ -28,14 +33,16 @@ public class Grid implements Displayable {
         }
   }
   
+  //gibt Würfel nach Angabe seiner Nummerierung zurück
   public Cube getCube(int x, int y, int z) {
-    if(x<0 || x > size-1 || 
-       y<0 || y > size-1 ||
-       z<0 || z > size-1)
+    if(x<0 || x >= size || 
+       y<0 || y >= size ||
+       z<0 || z >= size)
       return null;
     return grid[x][y][z];
   }
  
+  //gibt die Position als Nummerierung eines Würfels zurück
   public PVector getPos(Cube c) {
     for(int x = 0; x < size; x++)
       for(int y = 0; y < size; y++)
@@ -45,6 +52,7 @@ public class Grid implements Displayable {
     return null;
   }
   
+  //gibt ersten Würfel zurück, der die Gerade schneidet
   public Cube getIntersection(Line ray) {
     Cube intersection = null;
     float minDistance = 0;
@@ -68,6 +76,7 @@ public class Grid implements Displayable {
     return intersection;
   }
   
+  //gibt die max. 26 benachbarten Würfel eines Würfels zurück
   public HashMap<Cube, PVector> getNearbyTeamCubes(PVector pos, Team team) {
     
     HashMap<Cube, PVector> nearbyCubes = new HashMap<Cube, PVector>();
@@ -95,6 +104,7 @@ public class Grid implements Displayable {
      return teamCubes;
   }
   
+  //setzt die Teams der Würfel zurück und löscht ihre Verbindungen
   public void reset() {    
     for(int x = 0; x < size; x++)
       for(int y = 0; y < size; y++)

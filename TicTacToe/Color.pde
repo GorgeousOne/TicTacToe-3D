@@ -1,4 +1,5 @@
 
+//ersetzt color() und ermöglicht das Verändern von Farbwerten 
 public class Color {
   
   protected int h, s, b, alpha;

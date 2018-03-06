@@ -1,4 +1,9 @@
-private static TicTacToe me;
+
+//fast einzige Möglickeit, mit der das Enums Team Objekte der nicht statischen Klasse Color erzeugen kann
+private static TicTacToe singelton;
+
+private int pheight, pwidth;
+private int originalSize;
 
 private float camFOV, camDist, camAspect;
 private float yaw, pitch, yawStep, pitchStep;
@@ -16,38 +21,41 @@ private boolean somethingChanged;
 private Component2d pressedComponent;
 private long lastClick;
 
+//setzt Fenstergröße auf 75% der kleineren Seitenlänge des Bildschrim
 public void settings() {
-  int size = (int) (0.75 * min(displayWidth, displayHeight));
-  size(size, size, P3D);
+  originalSize = (int) (0.75 * min(displayWidth, displayHeight));
+  size(originalSize, originalSize, P3D);
 }
 
 public void setup() {
+  singelton = this;
   colorMode(HSB, 255);
-  frameRate(60);
-  me = this;
+  
+  pwidth = width;
+  pheight = height;
+  
   camFOV = PI * 60/180;
-  camDist = min(width, height)/2f / tan(camFOV/2);
   camAspect = 1f*width/height;
+  camDist = min(width, height)/2f / tan(camFOV/2);
 
-  //camera(camPos.x, camPos.y, camPos.z, camTarget.x, camTarget.y, camTarget.z, 0, 1, 0);
   camera(0, 0, camDist, 0, 0, 0, 0, 1, 0);
   perspective(camFOV, camAspect, abs(camDist)/10, abs(camDist)*2);                          
 
   yaw = pitch = 0;
   yawStep = pitchStep = 0;
-  spinFriction = 0.85f;
+  spinFriction = 0.95f;
 
   components2d = new ArrayList<Component2d>();
   components3d = new ArrayList<Displayable>();
 
-  teamToMove = Team.Red;
+  teamToMove = Team.Blue;
   components3dAreVisible = false;
 
   model = new Model();
   update();
 }
 
-//hält fest, ob im nächsten draw() Aufruf alles erneut gezeichnet werden soll
+//hält fest, ob beim nächsten draw() Aufruf alles erneut redraw()ed werden soll
 public void update() {
   somethingChanged = true;
 }
@@ -60,20 +68,21 @@ public void addComponent2d(int index, Component2d comp) {
 public void addComponent3d(Displayable comp) {
   components3d.add(comp);
 }
+//entfernt 3D-Objekt von der Leinwand
+public void removeComponent3d(Displayable comp) {
+  components3d.remove(comp);
+}
 //stellt die Sichtbarkeit aller 3D-Objekte ein
 public void setComponents3dVisible(boolean state) {
   components3dAreVisible = state;
 }
 
-public void removeComponent3d(Displayable comp) {
-  components3d.remove(comp);
-}
 
 //gibt das Team zurück, das gerade am Zug ist
 public Team getTurn() {
   return teamToMove;
 }
-//stellt ein, welches Team als nächstes am Zug ist
+//legt fest welches Team als nächstes am Zug ist
 public void setTurn(Team t) {
   teamToMove = t;
 }
@@ -85,26 +94,40 @@ private Team getOppositeTeam(Team t) {
 //setzt die Werte für Drehung und Drehbewegung zurück
 public void resetController() {
   yaw = yawStep = pitch = pitchStep = 0;
+  setTurn(getOppositeTeam(teamToMove));
   update();
-}
+  }
 
+/*reguliert Perspektive in Abhängigkeit des Fensters wenn nötig
+  stoppt Drehbewgungen des Gitters bzw. ja der Szene ab
+  startet Leinwand-Update wenn angefordert
+*/
 @Override
-public void draw() {    
-  if (frameCount == 5)  //erst jetzt setzt der optimized stroke ein .-.
-    update();
+public void draw() {
+  if(pheight != height || pwidth != width) {
+    camAspect = 1f * width / height;
+    camDist = min(width, height)/2f / tan(camFOV/2);
 
-  if (yawStep != 0 || pitchStep != 0) {
+    camera(0, 0, camDist, 0, 0, 0, 0, 1, 0);
+    perspective(camFOV, camAspect, abs(camDist)/10, abs(camDist)*2);      
+    
+    pheight = height;
+    pwidth = width;
+    update();
+  }
+  
+  if(yawStep != 0 || pitchStep != 0) {
     update();
     yaw += yawStep;
     pitch += pitchStep;
 
-    if (abs(yaw) > PI)
+    if(abs(yaw) > PI)
       yaw = -sign(yaw) * (TWO_PI-abs(yaw));
-    if (abs(pitch) > HALF_PI)
+    if(abs(pitch) > HALF_PI)
       pitch = sign(pitch) * HALF_PI;
     
     //wenn die Maus gedrückt ist, darf sich die Szene in nachfolgenden frames nicht weiterdrehen
-    if (mousePressed) {
+    if(mousePressed) {
       yawStep = 0;
       pitchStep = 0;
     
@@ -127,6 +150,8 @@ public void draw() {
     redraw();
 }
 
+//malt zuerst alle Sichtbaren 2d-Komponenten, bevor das Koordinatensystem gedreht wird
+//malt danach alle 3D-Sachen
 @Override
 public void redraw() {
   somethingChanged = false;
@@ -155,7 +180,7 @@ public void redraw() {
   }
 }
 
-//bestimmt, auf welches 2D-Objekt geklickt wird und wählt es aus oder setzt das Team
+//setzt das Team des angeklickten Würfels oder wählt eine angeklickte 2D-Komponente aus
 @Override
 public void mouseClicked() {
   if(!components3dAreVisible)
@@ -173,7 +198,7 @@ public void mouseClicked() {
   }
 
   if (isDoubleClick(millis()) && pointingAt.equals(model.getSelection())) {
-    if (model.confirmSelection(teamToMove))
+    if(model.confirmSelection(teamToMove) && !model.isGameOver())
       setTurn(getOppositeTeam(teamToMove));
   }else
     model.setSelection(pointingAt);
@@ -201,16 +226,16 @@ public void mouseClicked() {
     return;
 
   if (e.getButton() == LEFT) {
-    float stepX = 1f * (mouseX-pmouseX) / max(width, height);
-    float stepY = 1f * (mouseY-pmouseY) / max(width, height);
-    yawStep   =  TWO_PI * stepX;
-    pitchStep = -TWO_PI * stepY;
+    float stepX = 1f * (mouseX-pmouseX) / originalSize;
+    float stepY = 1f * (mouseY-pmouseY) / originalSize;
+    yawStep   =  PI * stepX;
+    pitchStep = -PI * stepY;
 
     update();
   }
 }
 
-//sagt 2D-Komponenten bescheid, wenn die Maus über ihnen schwebt
+//gibt 2D-Komponenten Bescheid, wenn die Maus über ihnen schwebt
 @Override
   public void mouseMoved() {
   for (Component2d c : components2d)
@@ -227,7 +252,7 @@ public void mouseClicked() {
     }
 }
 
-//sagt 2D-Komponenten bescheid, wenn sie von der Maus angeklickt werden
+//gibt 2D-Komponenten Bescheid, wenn sie von der Maus angeklickt werden
 @Override
   public void mousePressed() {
   for (Component2d c : components2d)
@@ -238,7 +263,7 @@ public void mouseClicked() {
     }
 }
 
-//sagt 2D-Komponenten bescheid, wenn sie von der Maus olsgelassen werden
+//gibt 2D-Komponenten Bescheid, wenn sie von der Maus olsgelassen werden
 @Override
   public void mouseReleased() {
   if (pressedComponent != null) {
@@ -248,7 +273,7 @@ public void mouseClicked() {
   }
 }
 
-//öffnet/schließt das Menü, wenn Escape gedrückt wird
+//gibt Knöpfen Bescheid, wenn ihr Shortcut gedrückt wird; verhindert, dass ESC die Anwendung schließt
 public void keyPressed() {
   for (Component2d c : components2d)
     if (c instanceof Button2d)
@@ -258,6 +283,7 @@ public void keyPressed() {
   update();
 }
 
+//gibt Knöpfen Bescheid, wenn ihr ShortCut losgelassen wird
 public void keyReleased() {
   for (Component2d c : components2d)
     if (c instanceof Button2d)
@@ -265,7 +291,7 @@ public void keyReleased() {
   update();
 }
 
-//gib die theoretische Position der Kamera zurück, praktisch wird nur die Szene gedreht
+//gibt die theoretische Position der Kamera zurück, praktisch wird nur die Szene gedreht
 public PVector getCamPos() {
   return new PVector(camDist * sin(-yaw) * cos(pitch),
                      camDist * sin(pitch),
@@ -273,7 +299,7 @@ public PVector getCamPos() {
 }
 
 //gibt eine Gerade zurück, die dem Mausklick in 3D entspricht
-//wenn etwas angeklickt wird, liegt es auf dieser Gerade
+//wird Etwas auf dem Bildschirm angeklickt, liegt es auf dieser Gerade
 public Line getMouseRay() {
   float normalX = (mouseX -  width/2f) / min(width/2f, height/2f), 
         normalY = (mouseY - height/2f) / min(width/2f, height/2f);
@@ -304,12 +330,12 @@ public Line getMouseRay() {
   return new Line(rayOrigin, rayDir);
 }
 
-//überprüft die Zeit zwischem dem letzten Klick und diesem, ob es sich eher um Doppel-klicken handelt
+//überprüft die Zeit zwischem dem letzten Klick und diesem, ob es sich um Doppel-klicken handelt
 public boolean isDoubleClick(long time) {
   return time - lastClick < 500;
 }
 
-//ordnet einer reellen oder komplexen Zahl ein Vorzeichen zu xD
+//bestimmt das Vorzeichen einer Zahl
 public static int sign(float arg0) {
   if (arg0 == 0)
     return 0;

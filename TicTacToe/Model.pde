@@ -1,5 +1,7 @@
 import java.awt.event.ActionEvent;
 
+//verwaltet das Gitter, die Auswahl von Würfeln im Gitte und das öffnen/schließen des Menüs
+//überprüft nach Auswählen, ob dsa jeweilige Team gewonnen hat 
 public class Model {
  
   private int gridSize;
@@ -19,6 +21,7 @@ public class Model {
   private boolean isGameOver;
   private Team winner;
 
+  //deklariert alle Elemente wie Gitter, Menü, Menühintergrund und Menübuttons
   public Model() {
     gridSize = 4;
     grid = new Grid(gridSize, height * 2/3f);
@@ -46,7 +49,6 @@ public class Model {
     menuButton.setVisible(false);
     
     menuBack = new Component2d(-width/2, -height/2, width, height);
-    menuBack.setForeground(new Color(255));
     menuBack.setVisible(false);
     
     menu = new Component2d(-height/4f, -height*3/8f, height/2f, height*11/16f);
@@ -67,6 +69,7 @@ public class Model {
     
     exitButton = new Button2d(-height*3/16f, height*3/32f, height*3/8f, height/8f);
     exitButton.setTextSize(height/20);
+    exitButton.setShortCut(ENTER);
     exitButton.setText("Exit Game :(");
     
     menuButton.setAction(new ActionListener() {
@@ -112,10 +115,12 @@ public class Model {
     return menuIsOpen;
   }
   
+  //gibt zurück, ob die Menüöffnungs-Animation gerade läuft
   public boolean menuIsOpening() {
-    return menu.isSliding();
+    return menu.isSlidingIn();
   }
   
+  //gibt zurück, ob das derzeitige Spiel bereits beendet ist
   public boolean isGameOver() {
     return isGameOver;
   }
@@ -127,14 +132,12 @@ public class Model {
     menuIsOpen = true;
     
     if(isGameOver) {
-      menuBack.setTexture(get());
       menu.setText(winner == null ? "It's a Draw!" : winner + " won!");
       continueButton.setText(winner == null ? "Really?" : "But how?");
       turnDisplay.setText(winner == null ? "Yes, really." : "Like this:");
       resetButton.setText("New Game");
 
     }else {
-      menuBack.setTexture(get());
       menu.setText("Pause");
       continueButton.setText("Continue");
       resetButton.setText("Restart");
@@ -143,17 +146,21 @@ public class Model {
     setComponents3dVisible(false);
     turnDisplay.setVisible(false);
     
-    menuButton.setVisible(false);    
-    menuBack.fadeIn(getBlurred(menuBack.getTexture()), 0, menuOpenTime);
+    menuButton.setVisible(false);  
     
-    float outOfScreen = menu.getY()-menu.getHeight();
+    menuBack.setSize(width, height);
+    menuBack.setPos(-width/2, -height/2);
+    menuBack.setTexture(get());
+    menuBack.fadeIn(getBlurred(get()), 0, menuOpenTime);
+    
+    float outOfScreen = menu.getY() - menu.getHeight();
     menu.slideIn(0, outOfScreen, 0, menuOpenTime);
     continueButton.slideIn(0, outOfScreen, 0, menuOpenTime);
     resetButton.slideIn(0, outOfScreen, 0, menuOpenTime);
     exitButton.slideIn(0, outOfScreen, 0, menuOpenTime);
   }
   
-  //schließt das Menü / setzt die Menü-Komponenten unsichtbar und alle 3D-Objekte sichtbar
+  //schließt das Menü / setzt die Menü-Komponenten unsichtbar und alle 3D-Objekte wieder sichtbar
   public void closeMenu() {
     if(menuIsOpening() || !menuIsOpen)
       return;
@@ -173,22 +180,24 @@ public class Model {
   //setzt vor allem das Cube-Gitter zurück und entscheidet, wer am Zug ist
   public void restart() {
     isGameOver = false;
-    resetController();
+    unselect();
     moves = 0;
     grid.reset();
-    unselect();
+    resetController();
     turnDisplay.setText("Turn: " + getTurn());
     closeMenu();
   }
   
-  //gibt den Würfel zurück, der gerade von der Maus ausgewählt wurde
+  //gibt den Würfel zurück, der gerade von der Maus ausgewählt ist
   public Cube getSelection() {
     return selection;
   }
-  //speichert den Würfel, der womöglich durch die Maus ausgewählt wurde
+  //gibt die Position des ausgewählten Würfels im Gitter zurück
   public PVector getSelectionPos() {
     return selectionPos.copy();
   }
+  
+  //hält fest, welcher Würfel mit der Maus markiert wurde
   public void setSelection(Cube c) {
     if(c.equals(selection))
       return;
@@ -209,8 +218,11 @@ public class Model {
     }
   }
   
-  //schließt die Auswahl eines Würfels für das jeweilig Team ab, es wird Ereiterungen von vorhandenen Verbindungen zwischen Würfeln gesucht
+  //schließt die Auswahl eines Würfels für das jeweilige Team ab
+  //erweitert vorhandene Verbindungen zwischen Würflen oder erstellt neue
+  //überprüft, ob ein Sieg vorliegt
   public boolean confirmSelection(Team team) {
+    
     if(selection.getTeam() != Team.Unoccupied)
       return false;
     
@@ -255,15 +267,15 @@ public class Model {
     return true;
   }
   
-  //knüpft neue Verbindungen zwischen Würfeln
+  //erstellt neue Verbindungen zwischen Würfeln eines Teams, die unmitelbar nebeneinander liegen und keine Verbindung haben
   public void connectCubes(HashMap<Cube, PVector> freeCubes) {
+    
     ArrayList<Connection> connections = selection.getConnections();
     ArrayList<Cube> cubeSet = new ArrayList<Cube> (freeCubes.keySet());    
     Cube c = cubeSet.get(0);
     
     //falls der ausgewählte Cube noch keine Verbindung hat, mache eine neue
     if(connections.isEmpty()) {
-      //println("  no other connections available:");
       new Connection(selection, c, freeCubes.get(c));
     
     //ansonsten gehe all Connections durch
@@ -286,13 +298,8 @@ public class Model {
     if(!freeCubes.isEmpty())
       connectCubes(freeCubes);
   }
-  
-  //gibt zurück, auf welchen Würfel im Gitter eine Gerade zeigt
-  public Cube getPointingAt(Line ray) {
-    return grid.getIntersection(ray);
-  }
 
-  //überprüft, alle verbindungen eines Würfels, ob sie 4 Würfel lang ist und somit ein Sieg vorliegt
+  //überprüft alle Verbindungen eines Würfels, ob sie 4 Würfel lang ist und somit ein Sieg vorliegt
   private void checkForVictory(Cube c) {
     for(Connection connection : c.getConnections())
       if(connection.size() >= 4) {
@@ -302,6 +309,11 @@ public class Model {
         winner = c.getTeam();
         openMenu();
       }
+  }
+  
+  //gibt zurück, auf welchen Würfel im Gitter eine Gerade zeigt (für das Mausklicken benutzt)
+  public Cube getPointingAt(Line ray) {
+    return grid.getIntersection(ray);
   }
   
   //gibt ein verschwommenes Bild des Ausgansbildes zurück (für das Hintergrundbild des Menüs)

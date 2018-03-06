@@ -1,10 +1,11 @@
 import java.util.Arrays;
 
+//Enum mit allen Teams, zu denen ein Würfel gehören kann
 public enum Team {
   
-  Red(me.new Color(26, 255, 255)),
-  Blue(me.new Color(127, 255, 255)),
-  Unoccupied(me.new Color(255));
+  Red(singelton.new Color(26, 255, 255)),
+  Blue(singelton.new Color(127, 255, 255)),
+  Unoccupied(singelton.new Color(255));
 
   private Color fill;
   
@@ -12,15 +13,16 @@ public enum Team {
     this.fill = c;
   }
   
+  //gibt die Farbe zurück, die das Team hat
   public Color getColor() {
     return fill.clone();
   }
 }
 
+//Würfel aus 6 Einzelflächen(Quad3d)
 public class Cube implements Displayable {
   
   private PVector pos;
-  private float pitch, yaw;
   private ArrayList<Quad3d> faces;
   private ArrayList<Connection> connections;
   
@@ -58,19 +60,13 @@ public class Cube implements Displayable {
     isVisible = true;
   }
 
+  //Aufbau entspricht größtenteils der des Quad3d
   //getter
   public PVector getPos() {
     return pos.copy();
   }
   public PVector getMid() {
     return faces.get(3).getOrigin().add(faces.get(0).getOrigin()).mult(0.5f);
-  }
-  
-  public float getYaw() {
-    return yaw;
-  }
-  public float getPitch() {
-    return pitch;
   }
   
   public Team getTeam() {
@@ -83,6 +79,7 @@ public class Cube implements Displayable {
     return stroke;
   }
   
+  //gibt alle Verbindungen zurück, in denen sich der Würfel befindet
   public ArrayList<Connection> getConnections() {
     return connections;  
   }
@@ -98,6 +95,7 @@ public class Cube implements Displayable {
     setFill(team.getColor());
   }
   
+  //setzt die Farbe, in der der Würfel dagestellt werden soll
   public void setFill(Color c) {
     fill = c;
     for(Quad3d face : faces)
@@ -113,10 +111,11 @@ public class Cube implements Displayable {
     isVisible = state;
   }
   
+  //informiert den Würfel über eine weitere Verbindung, in der der Würfel liegt
   public void addConnection(Connection c) {
     connections.add(c);  
   }
-  
+  //entfernt alle Informationen über Verbindungen des Würfels (zum Neustart)
   public void removeAllConnections() {
     for(Connection c : connections)
       removeComponent3d(c);
@@ -145,7 +144,8 @@ public class Cube implements Displayable {
       face.display();
   }
   
-  //simples depth-sorting
+  //reguliert die Sichtbarkeit der Seitenflächen, je nachdem, ob sie für die Kamera sichtbar sind
+  //nennt man das depth-sort?
   private void checkFaceVisiblity() {
     PVector camPos = getCamPos();
     

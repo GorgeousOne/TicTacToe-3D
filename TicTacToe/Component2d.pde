@@ -1,8 +1,10 @@
   
+//Enum mit möglichen relativen Positionierungen von Text in einer Komponente
 public enum Alignment {
   LEFT, RIGHT, CENTER, TOP, BOTTOM;
 }
 
+//2D-Komponente, die so etwas wie Knöpfe oder Menüs oder Bilder darstellen kann
 public class Component2d implements Displayable {
   
   protected float x, y, w, h;
@@ -17,12 +19,12 @@ public class Component2d implements Displayable {
   
   protected boolean  isVisible, borderIsPainted, isMouseHovered, isMousePressed;
   
-  protected boolean isSliding;
+  protected boolean isSlidingIn;
   protected long slideStart, slideDuration;
-  protected float dxSlide, dySlide;
+  protected float originX, originY, slideDX, slideDY;
   protected int animationSpeed;
   
-  protected boolean isFading;
+  protected boolean isFadingIn;
   protected long fadeStart, fadeDuration;
   protected PImage fadeTexture;
   
@@ -58,111 +60,146 @@ public class Component2d implements Displayable {
     this(-width/2f, -height/2f, width/10f, height/10f); 
   }
   
+  //führt mögliche Aktion bei Mausklick durch
   public void mousePress() {
     isMousePressed = true;
   }
+  //führt mögliche Aktion bei Loslassen der Maus durch
   public void mouseRelease() {
     isMousePressed = false;
   }
+  //führt mögliche Aktion bei Eintritt der Maus in Komponente durch
   public void mouseEnter() {
     isMouseHovered = true;
   }
+  //führt mögliche Aktion bei Austritt der Maus in Komponente durch
   public void mouseExit() {
     isMouseHovered = false;
   } 
   
+  //getter
+  //gibt x-Position zurück
   public float getX() {
     return x;
   }
+  //gibt y-Position zurück
   public float getY() {
     return y;
   }
+  //gibt Breite zurück
   public float getWidth() {
     return w;
   }
+  //gibt Höhe zurück
   public float getHeight() {
     return h;
   }
-  
+  //gibt zurück, ob Maus gerade über der Komponente schwebt
   public boolean isHovered() {
     return isMouseHovered;
   }
   
-  public boolean isSliding() {
-    return isSliding;  
+  //gibt zurück, ob die Komponente derzeit in einer Bewgungsanmation ist
+  public boolean isSlidingIn() {
+    return isSlidingIn;
   }
   
+  //gibt zurück, ob sich eine 2D-Koordinate in der Komponente befindet
   public boolean contains(int pX, int pY) {
-    if(!isVisible)
-      return false;
     return pX > x && pX < x+w &&
            pY > y && pY < y+h;
   }
   
-  public PImage getTexture() {
-    return texture;
-  }
-  public void setTexture(PImage img) {
-    this.texture = img;
-  }
-  
-  public void setText(String text) {
-    this.text = text;
-  }
+  //setzt die Koordinaten der Komponente
   public void setPos(float x, float y) {
     this.x = x;
     this.y = y;
   }
+  
+  //setzt die Größe der Komponente
   public void setSize(float w, float h) {
     this.w = w;
     this.h = h;
   }
   
+  //definiert die Textur, eine Bild, der Komponente
+  public void setTexture(PImage img) {
+    this.texture = img;
+  }
+  
+  //definiert den Text, der in der Komponente geschrieben steht
+  public void setText(String text) {
+    this.text = text;
+  }
+  
+  //legt die Textfarbe fest
   public void setForeground(Color c) {
     this.foreground = c;
   }
+  //legt die Hintergrundfarbe der Komponente fest
   public void setBackground(Color c) {
     this.background = c;
   }
+  //legt die Farbe der Umrandung fest
   public void setBorder(Color c) {
     this.border = c;
   }
   
+  //bestimmt, ob die Umrandung der Komponente gezeichnet wird
   public void setBorderPainted(boolean flag) {
     borderIsPainted = flag;
   }
+  //setzt die Strichstärke der Umrandung fest
   public void setBorderWeight(float weight) {
     this.borderWeight = weight;
   }
+  //legt die Textgröße des Schriftzuges fest
   public void setTextSize(float size) {
     this.textSize = size;  
   }
   
+  //legt die x-Ausrichtung des Textes fest
   public void setHorizontalAlignment(Alignment a) {
     horizontalAlignment = a;
   }
+  //legt die y-Ausrichtung  des Textes fest
   public void setVerticalAlignment(Alignment a) {
     verticalAlignment = a;
   }
+  //legt den Abstand des Textes zu Rand der Komponente fest
   public void setSpacing(float spacing) {
     this.spacing = spacing;
   }
   
-  public void slideIn(float dx, float dy, long delay, long duration) {
+  /*beginnt eine Bewgungsanimation von einer relativen Position zurück zu ursprünglichen Position
+    @param relative x-Koordinate
+    @param relative y-Koordinate
+    @param Verzögerung bis zum Beginn der Animation
+    @param Dauer der Animation
+  */
+  public void slideIn(float fromDX, float fromDY, long delay, long duration) {
     setVisible(true);
     slideStart = millis() + delay;
     slideDuration = duration;
-    dxSlide = dx;
-    dySlide = dy;
-    isSliding = true;
+    slideDX = fromDX;
+    slideDY = fromDY;
+    isSlidingIn = true;
+
+    originX = getX();
+    originY = getY();
   }
-    
+  
+  /*beginnt eine neue Textur einzublenden
+    @param neue Textur
+    @param Verzögerung bis zum Beginn der Animation
+    @param Dauer der Animation
+  */
   public void fadeIn(PImage texture, long delay, long duration) {
     setVisible(true);
     fadeStart = millis() + delay;
     fadeDuration = duration;
     fadeTexture = texture;
-    isFading = true;
+    isFadingIn = true;
   }
 
   @Override
@@ -173,27 +210,33 @@ public class Component2d implements Displayable {
   @Override
   public void display() {
     if(!isVisible) {
-      isSliding = false;
-      isFading = false;
+      //beendet jegliche Animation
+      if(isSlidingIn)
+        slideDuration = 0;
+       if(isFadingIn)
+         fadeDuration = 0;
       return;
     }
     
     pushMatrix();
     pushStyle();
     
-    if(isSliding && millis() >= slideStart) {
+    //setzt die momentane Position der Komponente während der Bewegungsanimation
+    if(isSlidingIn && millis() >= slideStart) {
       long slideTimeLeft = (slideStart+slideDuration) - millis();
       
-      //Verschiebung nur nach Überpüfung der Zeit, da die Komponente sonst weiter gleitet
       if(slideTimeLeft > 0) {
-        //s: Strecke in Pixel, t: Zeit in ms
+        //s: relative verbleibende Strecke zum Ursprung
+        //t: verbleibende Zeit bis zum Ende der Animation
         //s(t) = sGesamt / tGesamt^n * t^n
-        float dxCurrent = dxSlide/pow(slideDuration, animationSpeed) * pow(slideTimeLeft, animationSpeed),
-              dyCurrent = dySlide/pow(slideDuration, animationSpeed) * pow(slideTimeLeft, animationSpeed);
-        translate(dxCurrent, dyCurrent, 0);
+        float currentDX = slideDX/pow(slideDuration, animationSpeed) * pow(slideTimeLeft, animationSpeed),
+              currentDY = slideDY/pow(slideDuration, animationSpeed) * pow(slideTimeLeft, animationSpeed);
+        setPos(originX + currentDX, originY + currentDY);
       
       }else {
-        isSliding = false;
+        //gehe zurück zur ursprünglichen Position, beende Animation
+        setPos(originX, originY);
+        isSlidingIn = false;
         update();
       }
     }
@@ -211,19 +254,19 @@ public class Component2d implements Displayable {
       vertex(x+w, y,   texture.width, 0);
       vertex(x+w, y+h, texture.width, texture.height);
       vertex(x,   y+h, 0,             texture.height);
-      endShape();
-      
+      endShape();   
     }else {
       fill(background.integer());
       rect(x, y, w, h);
     }
     
-    if(isFading && millis() >= fadeStart) {
-      long fadeTimeLeft = (fadeStart+fadeDuration) - millis();      
-      int alpha = 255 - (int) (255f / pow(fadeDuration, animationSpeed) * pow(fadeTimeLeft, animationSpeed));
+    //blendet die neue Textur mit momentanem Alpha-Wert ein
+    if(isFadingIn && millis() >= fadeStart) {
+      long fadeTimeLeft = (fadeStart+fadeDuration) - millis();
+      int alphaLeft = (int) (255f / pow(fadeDuration, animationSpeed) * pow(fadeTimeLeft, animationSpeed));
 
       translate(0, 0, 0.1);
-      tint(255, alpha);
+      tint(255, 255 - alphaLeft);
 
       beginShape();
       texture(fadeTexture);
@@ -234,8 +277,9 @@ public class Component2d implements Displayable {
       endShape();
       
       if(fadeTimeLeft <= 0) {
-        isFading = false;
+        //setzte neue Textur, beende Animation
         setTexture(fadeTexture);
+        isFadingIn = false;
       }
     }
     
@@ -248,6 +292,7 @@ public class Component2d implements Displayable {
     popMatrix();
   }
   
+  //zeichnet den Schriftzug der Komponente auf die Leinwand
   private void paintText() {
     fill(foreground.integer());
     textSize(textSize);

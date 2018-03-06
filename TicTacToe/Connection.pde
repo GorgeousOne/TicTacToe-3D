@@ -1,4 +1,5 @@
 
+//repräsentiert eine Liste mit Würfeln die (vom Model analysiert) in einer Reihe liegen und demselben Team angehören
 public class Connection implements Displayable {
   
   private ArrayList<Cube> cubes;
@@ -23,26 +24,34 @@ public class Connection implements Displayable {
     isVisible = false;
   }
   
+  //gibt die Steigung (zwischen den ersten beiden Würfeln) der Verbindung im Gitter zurück 
+  //z.B. (0, 1, 0) oder (-1, -1, -1)
   public PVector getDirection() {
     return direction.copy();
   }
   
+  //gibt das Team zurück, aus dem die Würfel der Verbindung stammen
   public Team getTeam() {
     return team;
   }
   
+  //gibt alle Würfel in der Verbindung nthalten zurück
   public ArrayList<Cube> getCubes() {
     return cubes;
   }
   
+  //git zurück, ob ein bestimmter Würfel teil der Verbindung ist
   public boolean contains(Cube c) {
     return cubes.contains(c);
   }
   
+  //gibt die Länge der Verbindung zurück
   public int size() {
     return cubes.size();
   }
   
+  //fügt einen weiteren Würfel zur Verbindung hinzu
+  //(das Model allein garantiert dafür, dass der Würfel auch wirklich in der Reihe liegt)
   public void addCube(Cube c) {
     cubes.add(c);
     c.addConnection(this);

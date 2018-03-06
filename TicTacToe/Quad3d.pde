@@ -1,11 +1,11 @@
 
+//repräsentiert ein Viereck in einer Ebene, mit gegenüberliegenden Seiten, die parallel sind
+//eigentlich ist es ein Parallelogramm aber so lang sollte der Name nicht werden .-.
 public class Quad3d extends Plane implements Displayable{
-  
-  private float pitch, yaw;
-  private PVector pos;
-  
+    
   private PVector[] vertices;
-  
+  private PVector pos;
+
   private Color fill, stroke;
   private PImage texture;
   
@@ -14,7 +14,6 @@ public class Quad3d extends Plane implements Displayable{
   public Quad3d(PVector origin, PVector edgeA, PVector edgeB) {
     super(origin, edgeA, edgeB);
     
-    yaw = pitch = 0;
     pos = new PVector(0, 0, 0);
     
     vertices = new PVector[] {getOrigin(),
@@ -26,67 +25,60 @@ public class Quad3d extends Plane implements Displayable{
     fill = new Color(0);
     stroke = new Color(0);
   }
-
-  public PVector[] getUntransformedVertices() {
-    return vertices.clone();
-  }
- 
-  //public PVector[] getVertices() {
-  //  return transVertices.clone();
-  //}
   
   //getter
+  //gibt nun Stützvektor in Kombination der Position zurück
+  @Override
+  public PVector getOrigin() {
+    return super.getOrigin().add(getPos());
+  }
+  //gibt Position, also Verschiebing des Stützvektors, zurück
   public PVector getPos() {
     return pos.copy();
   }
+  //gibt die Mitte des Vierecks zurück
   public PVector getMid() {
-    return vertices[0].copy().add(getEdgeA().mult(0.5)).add(getEdgeB().mult(0.5));
+    return getOrigin().add(getEdgeA().mult(0.5)).add(getEdgeB().mult(0.5));
   }
- 
-  public float getYaw() {
-    return yaw;
-  }
-  
-  public float getPitch() {
-    return pitch;
-  }
-  
+  //gibt den Vektor einer Seite zurück
   public PVector getEdgeA() {
     return vertices[1].copy().sub(vertices[0]);
   }
-  
+  //gibt den Vektor der einen Seite zurück
   public PVector getEdgeB() {
     return vertices[3].copy().sub(vertices[0]);
   }
   
+  //gibt Füllfarbe zurück
   public Color getFill() {
     return fill;
   }
+  //gibt Umrandungsfarbe zurück
   public Color getStroke() {
     return stroke;
   }
-  
+  //gibt das Bild, die Textur, zurück
   public PImage getTexture() {
     return texture;
   }
 
   //setter
+  //legt die Verschiebung des Stützvektors fest
   public void setPos(PVector point) {
     for(PVector vertex : vertices)
       vertex.sub(pos).add(point);
-    pos = point.copy();
-    
-    setOrigin(vertices[0]);
-    setNormal(getEdgeA().cross(getEdgeB()));
-  }  
+    pos = point.copy();    
+  } 
  
+  //legt die Füllfarbe fest
   public void setFill(Color c) {
     fill = c;
   }
+  //legt die Umrandungsfarbe fest
   public void setStroke(Color c) {
     stroke = c;
   }
-  
+  //legt die Textur fest
   public void setTexture(PImage img) {
     texture = img;
   }
@@ -96,6 +88,7 @@ public class Quad3d extends Plane implements Displayable{
     isVisible = state;
   }
   
+  @Override
   public boolean contains(PVector p) {
     if(!super.contains(p))
       return false;
@@ -129,28 +122,12 @@ public class Quad3d extends Plane implements Displayable{
         p1 = point.y;
         p2 = point.z;
     }
-      
+    
     float r, s;
     r = (p1*b2 - p2*b1) / (a1*b2 - a2*b1);
     s = (p2*a1 - p1*a2) / (a1*b2 - a2*b1);
     
     return r > 0 && r < 1 && s > 0 && s < 1;
-  }
-  
-  public boolean intersects(Line l) {
-    if(!super.intersects(l))
-      return false;
-
-    PVector point = super.getIntersection(l);//.sub(transVertices[0]);   
-    return contains(point);
-  }
-  
-  public PVector getIntersection(Line l) {
-    //get the poit of intersection between the line and the plane
-    float r = getOrigin().sub(l.getOrigin()).dot(getNormal()) / l.getDirection().dot(getNormal());
-    PVector intersection = l.getPoint(r);
-    
-    return contains(intersection) ? intersection : null;
   }
   
   @Override
@@ -180,7 +157,7 @@ public class Quad3d extends Plane implements Displayable{
     }
     
     //PVector mid = getMid();
-    //PVector end = mid.copy().add(getNormal().normalize().mult(50));
+    //PVector end = mid.copy().add(getNormal().normalize().mult(10));
     //stroke(100, 255, 255);
     //line(mid.x, mid.y, mid.z, end.x, end.y, end.z);
   }
