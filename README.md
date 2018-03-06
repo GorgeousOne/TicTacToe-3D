@@ -12,8 +12,8 @@ The first player with 4 in a row(straight or diagonally) wins.
 
    - ESC to enter/leave menu
    
+   - ENTER int menu to leave game
+   
    - designed for 2 local players
 
    - no computer enemy
-
-   - WARNING: do not enter full screen xD
